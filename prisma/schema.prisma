@@ -11,35 +11,36 @@ datasource db {
 }
 
 model Design {
-  id Int @id @default(autoincrement())
+  id    Int    @id @default(autoincrement())
   title String @default("Untitled")
 
-  canvasWidth Int @default(300)
+  canvasWidth  Int @default(300)
   canvasHeight Int @default(500)
 
-  elements Element[]
+  elements String? @db.VarChar(5000)
 }
 
-model Element {
-  id Int @id @default(autoincrement())
-  type String
-  name String
+// model Element {
+//   id String @id @default(uuid())
 
-  x Int
-  y Int
-  width Int
-  height Int
+//   type String
+//   name String
 
-  fill String
+//   x      Int
+//   y      Int
+//   width  Int
+//   height Int
 
-  // fot type text
-  text String?
-  fontFamily String?
-  fontStyle String?
+//   fill String
 
-  // for type image
-  image String?
+//   // fot type text
+//   text       String?
+//   fontFamily String?
+//   fontStyle  String?
 
-  design   Design? @relation(fields: [designId], references: [id])
-  designId Int?
-}
+//   // for type image
+//   image String?
+
+//   design   Design? @relation(fields: [designId], references: [id])
+//   designId Int?
+// }

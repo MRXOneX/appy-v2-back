@@ -17,6 +17,17 @@ export class DesignService {
     });
   }
 
+  async save(data: any): Promise<any> {
+    return await this.prisma.design.update({
+      where: {
+        id: data.designId,
+      },
+      data: {
+        elements: data.elements,
+      },
+    });
+  }
+
   async getOne(id: number): Promise<any> {
     if (id) {
       return await this.prisma.design.findUnique({
@@ -48,4 +59,13 @@ export class DesignService {
       },
     });
   }
+
+  // async addElement(data: any) {
+  //   return await this.prisma.element.create({
+  //     data: {
+  //       ...data.element,
+  //       design: { connect: { id: data.designId } },
+  //     },
+  //   });
+  // }
 }

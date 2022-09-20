@@ -10,6 +10,11 @@ export class DesignController {
     return this.designService.createDesign(design);
   }
 
+  @Post('save')
+  async save(@Body() data: any): Promise<any> {
+    return await this.designService.save(data);
+  }
+
   @Get(':id')
   async getOne(@Param() param: any): Promise<any> {
     return this.designService.getOne(+param?.id);

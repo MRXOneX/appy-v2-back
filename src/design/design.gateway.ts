@@ -49,4 +49,13 @@ export class DesignGateway {
       });
     }
   }
+
+  // @SubscribeMessage('addElementServer')
+  // async addElement(client: Socket, payload: any) {
+  //   const element = await this.designService.addElement(payload);
+  //   if (element) {
+  //     console.log(element);
+  //     this.server.emit('addElementClient', element);
+  //   }
+  // }
 }
