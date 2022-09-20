@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+//
+import { createCanvas, loadImage } from 'canvas';
+// const { createCanvas } = from('canvas');
 
 @Injectable()
 export class DesignService {
@@ -36,6 +39,39 @@ export class DesignService {
         },
       });
     }
+  }
+
+  async preview(body: any): Promise<any> {
+    console.log(body);
+    // if (body.id) {
+    const design = await this.prisma.design.findUnique({
+      where: {
+        id: body.designId,
+      },
+    });
+
+    const canvas = createCanvas(200, 200);
+    const ctx = canvas.getContext('2d');
+
+    // Write "Awesome!"
+    ctx.font = '30px Impact';
+    ctx.rotate(0.1);
+    ctx.fillText('Awesome!', 50, 100);
+
+    // Draw line under text
+    const text = ctx.measureText('Awesome!');
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.lineTo(50, 102);
+    ctx.lineTo(50 + text.width, 102);
+    ctx.stroke();
+
+    // Draw cat with lime helmet
+    loadImage('src/utils/images/shapes.png').then((image) => {
+      ctx.drawImage(image, 50, 0, 70, 70);
+    });
+    return design;
+    // }
   }
 
   async updateCanvasWidth(id: number, canvasWidth: number): Promise<any> {

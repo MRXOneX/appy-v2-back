@@ -19,4 +19,9 @@ export class DesignController {
   async getOne(@Param() param: any): Promise<any> {
     return this.designService.getOne(+param?.id);
   }
+
+  @Post('preview')
+  async Preview(@Body() body: any): Promise<any> {
+    return this.designService.preview(body);
+  }
 }
