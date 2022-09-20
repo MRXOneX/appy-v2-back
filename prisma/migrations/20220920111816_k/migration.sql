@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Design" ADD COLUMN     "canvasHeight" INTEGER NOT NULL DEFAULT 500,
+ADD COLUMN     "canvasWidth" INTEGER NOT NULL DEFAULT 300;
