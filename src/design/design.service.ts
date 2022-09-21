@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 //
-import { createCanvas, loadImage } from 'canvas';
+import { createCanvas, registerFont, Image, loadImage } from 'canvas';
+import sharp from 'sharp';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const Konva = require('konva/cmj').default;
+import * as fs from 'fs';
+registerFont('src/fonts/nunito.ttf', { family: 'Nunito' });
 // const { createCanvas } = from('canvas');
 
 @Injectable()
@@ -42,36 +47,95 @@ export class DesignService {
   }
 
   async preview(body: any): Promise<any> {
-    console.log(body);
-    // if (body.id) {
     const design = await this.prisma.design.findUnique({
       where: {
         id: body.designId,
       },
     });
 
-    const canvas = createCanvas(200, 200);
-    const ctx = canvas.getContext('2d');
-
-    // Write "Awesome!"
-    ctx.font = '30px Impact';
-    ctx.rotate(0.1);
-    ctx.fillText('Awesome!', 50, 100);
-
-    // Draw line under text
-    const text = ctx.measureText('Awesome!');
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.beginPath();
-    ctx.lineTo(50, 102);
-    ctx.lineTo(50 + text.width, 102);
-    ctx.stroke();
-
-    // Draw cat with lime helmet
-    loadImage('src/utils/images/shapes.png').then((image) => {
-      ctx.drawImage(image, 50, 0, 70, 70);
+    const stage = new Konva.Stage({
+      width: design.canvasWidth,
+      height: design.canvasHeight,
     });
-    return design;
-    // }
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    const drawElements = async () => {
+      JSON.parse(design.elements).forEach(async (el: any) => {
+        if (el.type === 'rect') {
+          const box = new Konva.Rect({
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: el.height,
+            fill: el.fill,
+          });
+          layer.add(box);
+          return;
+        }
+        if (el.type === 'text') {
+          const text = new Konva.Text({
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: el.height,
+            fill: el.fill,
+            fontStyle: el.fontStyle,
+            fontFamily: el.fontFamily,
+            fontSize: el.fontSize,
+
+            text: el.isReplace ? body.texts[el.id]?.text : el.text,
+          });
+          layer.add(text);
+          return;
+        }
+        if (el.type === 'image') {
+          // const img = await loadImage(el.image);
+          // console.log(img);
+
+          // const yoda = new Konva.Image({
+          //   image: img,
+          //   x: el.x,
+          //   y: el.y,
+          //   width: el.width,
+          //   height: el.height,
+          // });
+
+          // layer.add(yoda);
+
+          loadImage('src/utils/images/shapes.png').then((img: any) => {
+            console.log(img)
+            const image = new Konva.Image({
+              image: img,
+              x: el.x,
+              y: el.y,
+              width: el.width,
+              height: el.height,
+            });
+            layer.add(image);
+          });
+
+          // const img = new Image();
+          // img.src = el.image;
+          // const image = new Konva.Image({
+          //   image: img,
+          //   x: el.x,
+          //   y: el.y,
+          //   width: el.width,
+          //   height: el.height,
+          // });
+          // layer.add(image);
+          return;
+        }
+      });
+    };
+
+    console.log('log');
+    await drawElements();
+    console.log('tolog');
+    const dataURL = stage.toDataURL({ pixelRatio: 3 });
+
+    console.log(dataURL);
   }
 
   async updateCanvasWidth(id: number, canvasWidth: number): Promise<any> {
