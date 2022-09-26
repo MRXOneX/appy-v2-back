@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 //
-import { createCanvas, registerFont, Image, loadImage } from 'canvas';
+import { registerFont, Image, loadImage } from 'canvas';
 import sharp from 'sharp';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Konva = require('konva/cmj').default;
 import * as fs from 'fs';
-registerFont('src/fonts/nunito.ttf', { family: 'Nunito' });
-// const { createCanvas } = from('canvas');
+// registerFont('src/fonts/nunito.ttf', { family: 'Nunito' });
 
 @Injectable()
 export class DesignService {
@@ -17,10 +16,15 @@ export class DesignService {
     return await this.prisma.design.findMany();
   }
 
+  async uploadFile(file: any) {
+    
+  }
+
   async createDesign(design: any): Promise<any> {
     return await this.prisma.design.create({
       data: {
         title: design?.title,
+        typeFile: 'jpg',
       },
     });
   }
@@ -32,6 +36,9 @@ export class DesignService {
       },
       data: {
         elements: data.elements,
+        canvasWidth: data.canvasWidth,
+        canvasHeight: data.canvasHeight,
+        typeFile: data.typeFile,
       },
     });
   }
@@ -61,8 +68,11 @@ export class DesignService {
     stage.add(layer);
 
     const drawElements = async () => {
-      JSON.parse(design.elements).forEach(async (el: any) => {
-        if (el.type === 'rect') {
+      const parseElements = JSON.parse(design.elements);
+
+      let countEnd = 0;
+      for (const el of parseElements) {
+        if (el._type === 'rect') {
           const box = new Konva.Rect({
             x: el.x,
             y: el.y,
@@ -71,9 +81,10 @@ export class DesignService {
             fill: el.fill,
           });
           layer.add(box);
-          return;
+          countEnd++;
         }
-        if (el.type === 'text') {
+        if (el._type === 'text') {
+          console.log(el);
           const text = new Konva.Text({
             x: el.x,
             y: el.y,
@@ -87,55 +98,74 @@ export class DesignService {
             text: el.isReplace ? body.texts[el.id]?.text : el.text,
           });
           layer.add(text);
-          return;
+          countEnd++;
         }
-        if (el.type === 'image') {
-          // const img = await loadImage(el.image);
-          // console.log(img);
+        if (el._type === 'image' && el.image.isURL) {
+          const img = await loadImage(el.image.url);
+          const image = new Konva.Image({
+            image: img,
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: el.height,
+          });
+          layer.add(image);
+          countEnd++;
+        }
 
-          // const yoda = new Konva.Image({
-          //   image: img,
+        if (
+          el._type === 'dynamic_image' &&
+          el.isReplace &&
+          body.images[el.id].base64
+        ) {
+          const uri = body.images[el.id].base64.split(';base64,').pop();
+          // const dynamic_image = new Konva.Rect({
           //   x: el.x,
           //   y: el.y,
           //   width: el.width,
           //   height: el.height,
+          //   stroke: el.stroke,
           // });
 
-          // layer.add(yoda);
-
-          loadImage('src/utils/images/shapes.png').then((img: any) => {
-            console.log(img)
-            const image = new Konva.Image({
-              image: img,
-              x: el.x,
-              y: el.y,
+          // layer.add(dynamic_image);
+          const imgBuffer = Buffer.from(uri, 'base64');
+          await sharp(imgBuffer)
+            .resize({
               width: el.width,
               height: el.height,
-            });
-            layer.add(image);
-          });
 
-          // const img = new Image();
-          // img.src = el.image;
-          // const image = new Konva.Image({
-          //   image: img,
-          //   x: el.x,
-          //   y: el.y,
-          //   width: el.width,
-          //   height: el.height,
-          // });
-          // layer.add(image);
-          return;
+              position: el.pos,
+              background: { r: 0, g: 0, b: 0, alpha: 0 },
+
+              fit: el.fit,
+            })
+            .png()
+            .toBuffer()
+            .then((data) => {
+              const img = new Image();
+              img.src = data;
+
+              const image = new Konva.Image({
+                image: img,
+                x: el.x,
+                y: el.y,
+              });
+              layer.add(image);
+            });
+          countEnd++;
         }
-      });
+      }
+
+      if (countEnd === parseElements.length) {
+        if (design.typeFile === 'pdf') {
+          return stage.toDataURL({ pixelRatio: 3 });
+        } else {
+          return stage.toDataURL({ pixelRatio: 3 });
+        }
+      }
     };
 
-    console.log('log');
-    await drawElements();
-    console.log('tolog');
-    const dataURL = stage.toDataURL({ pixelRatio: 3 });
-
-    console.log(dataURL);
+    return await drawElements();
   }
 
   async updateCanvasWidth(id: number, canvasWidth: number): Promise<any> {

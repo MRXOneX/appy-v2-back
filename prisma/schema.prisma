@@ -14,10 +14,29 @@ model Design {
   id    Int    @id @default(autoincrement())
   title String @default("Untitled")
 
+  typeFile TypeFile
+
   canvasWidth  Int @default(300)
   canvasHeight Int @default(500)
 
-  elements String? @db.VarChar(5000)
+  files File[]
+
+  elements String? @db.VarChar(100000)
+}
+
+model File {
+  id Int @id @default(autoincrement())
+
+  url      String
+  
+  design   Design? @relation(fields: [designId], references: [id])
+  designId Int?
+}
+
+enum TypeFile {
+  pdf
+  png
+  jpg
 }
 
 // model Element {
