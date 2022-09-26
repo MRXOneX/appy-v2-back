@@ -16,8 +16,12 @@ export class DesignService {
     return await this.prisma.design.findMany();
   }
 
-  async uploadFile(file: any) {
-    
+  async uploadFile(body: any) {
+    fs.writeFile(`${__dirname}/client`, body.file, (e) => {
+      if (e) {
+        throw e;
+      }
+    });
   }
 
   async createDesign(design: any): Promise<any> {
