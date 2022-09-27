@@ -3,6 +3,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 //
 import { registerFont, Image, loadImage } from 'canvas';
 import sharp from 'sharp';
+//
+import QRCode from 'qrcode';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Konva = require('konva/cmj').default;
 import * as fs from 'fs';
@@ -17,11 +19,25 @@ export class DesignService {
   }
 
   async uploadFile(body: any) {
-    fs.writeFile(`${__dirname}/client`, body.file, (e) => {
-      if (e) {
-        throw e;
-      }
-    });
+    try {
+      const uri = body.file.base64.split(';base64,').pop();
+
+      const imgBuffer = Buffer.from(uri, 'base64');
+      const image = await sharp(imgBuffer).toBuffer();
+
+      const fileName = body.file.name;
+
+      fs.writeFileSync(`client/${fileName}`, image);
+
+      const file = await this.prisma.file.create({
+        data: {
+          design: { connect: { id: body.designId } },
+          url: `http://localhost:3333/${fileName}`,
+        },
+      });
+
+      return file;
+    } catch (error) {}
   }
 
   async createDesign(design: any): Promise<any> {
@@ -53,6 +69,9 @@ export class DesignService {
         where: {
           id: id,
         },
+        include: {
+          files: true,
+        },
       });
     }
   }
@@ -74,7 +93,6 @@ export class DesignService {
     const drawElements = async () => {
       const parseElements = JSON.parse(design.elements);
 
-      let countEnd = 0;
       for (const el of parseElements) {
         if (el._type === 'rect') {
           const box = new Konva.Rect({
@@ -85,53 +103,15 @@ export class DesignService {
             fill: el.fill,
           });
           layer.add(box);
-          countEnd++;
         }
-        if (el._type === 'text') {
-          console.log(el);
-          const text = new Konva.Text({
-            x: el.x,
-            y: el.y,
-            width: el.width,
-            height: el.height,
-            fill: el.fill,
-            fontStyle: el.fontStyle,
-            fontFamily: el.fontFamily,
-            fontSize: el.fontSize,
 
-            text: el.isReplace ? body.texts[el.id]?.text : el.text,
+        if (el._type === 'qrcode' && el.isReplace) {
+          const qrcode = await QRCode.toDataURL('I am a pony!', {
+            errorCorrectionLevel: 'H',
           });
-          layer.add(text);
-          countEnd++;
-        }
-        if (el._type === 'image' && el.image.isURL) {
-          const img = await loadImage(el.image.url);
-          const image = new Konva.Image({
-            image: img,
-            x: el.x,
-            y: el.y,
-            width: el.width,
-            height: el.height,
-          });
-          layer.add(image);
-          countEnd++;
-        }
 
-        if (
-          el._type === 'dynamic_image' &&
-          el.isReplace &&
-          body.images[el.id].base64
-        ) {
-          const uri = body.images[el.id].base64.split(';base64,').pop();
-          // const dynamic_image = new Konva.Rect({
-          //   x: el.x,
-          //   y: el.y,
-          //   width: el.width,
-          //   height: el.height,
-          //   stroke: el.stroke,
-          // });
+          const uri = qrcode.split(';base64,').pop();
 
-          // layer.add(dynamic_image);
           const imgBuffer = Buffer.from(uri, 'base64');
           await sharp(imgBuffer)
             .resize({
@@ -156,16 +136,73 @@ export class DesignService {
               });
               layer.add(image);
             });
-          countEnd++;
+        }
+
+        if (el._type === 'text') {
+          const text = new Konva.Text({
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: el.height,
+            fill: el.fill,
+            fontStyle: el.fontStyle,
+            fontFamily: el.fontFamily,
+            fontSize: el.fontSize,
+
+            text: el.isReplace ? body.texts[el.id]?.text : el.text,
+          });
+          layer.add(text);
+        }
+        if (el._type === 'image' && el.image.isURL) {
+          const img = await loadImage(el.image.url);
+          const image = new Konva.Image({
+            image: img,
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: el.height,
+          });
+          layer.add(image);
+        }
+
+        if (
+          el._type === 'dynamic_image' &&
+          el.isReplace &&
+          body.images[el.id].base64
+        ) {
+          const uri = body.images[el.id].base64.split(';base64,').pop();
+
+          const imgBuffer = Buffer.from(uri, 'base64');
+          await sharp(imgBuffer)
+            .resize({
+              width: el.width,
+              height: el.height,
+
+              position: el.pos,
+              background: { r: 0, g: 0, b: 0, alpha: 0 },
+
+              fit: el.fit,
+            })
+            .png()
+            .toBuffer()
+            .then((data) => {
+              const img = new Image();
+              img.src = data;
+
+              const image = new Konva.Image({
+                image: img,
+                x: el.x,
+                y: el.y,
+              });
+              layer.add(image);
+            });
         }
       }
 
-      if (countEnd === parseElements.length) {
-        if (design.typeFile === 'pdf') {
-          return stage.toDataURL({ pixelRatio: 3 });
-        } else {
-          return stage.toDataURL({ pixelRatio: 3 });
-        }
+      if (design.typeFile === 'pdf') {
+        return stage.toDataURL({ pixelRatio: 3 });
+      } else {
+        return stage.toDataURL({ pixelRatio: 3 });
       }
     };
 
