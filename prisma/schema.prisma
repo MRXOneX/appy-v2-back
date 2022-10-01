@@ -21,7 +21,7 @@ model Design {
 
   files File[]
 
-  elements String? @db.VarChar(65000)
+  elements String? @db.VarChar(13000)
 }
 
 model File {
