@@ -200,64 +200,66 @@ export class DesignService {
             });
         }
       }
+      
 
-      if (design.typeFile === 'pdf') {
-        const pdf = new jsPDF();
-        stage.find('Text').forEach((text: any) => {
-          const size = text.fontSize()
-          pdf.setFontSize(size);
-          pdf.text(text.text(), text.x(), text.y(), {
-            baseline: 'top',
-            angle: -text.getAbsoluteRotation(),
-          });
-        });
+      return stage.toDataURL({ pixelRatio: 2 })
+      // if (design.typeFile === 'pdf') {
+      //   const pdf = new jsPDF();
+      //   stage.find('Text').forEach((text: any) => {
+      //     const size = text.fontSize()
+      //     pdf.setFontSize(size);
+      //     pdf.text(text.text(), text.x(), text.y(), {
+      //       baseline: 'top',
+      //       angle: -text.getAbsoluteRotation(),
+      //     });
+      //   });
 
-        // then put image on top of texts (so texts are not visible)
-        pdf.addImage(
-          stage.toDataURL({ pixelRatio: 2 }),
-          0,
-          0,
-          stage.width(),
-          stage.height(),
-        );
+      //   // then put image on top of texts (so texts are not visible)
+      //   pdf.addImage(
+      //     stage.toDataURL({ pixelRatio: 2 }),
+      //     0,
+      //     0,
+      //     stage.width(),
+      //     stage.height(),
+      //   );
 
-        const fileName = `${design.id}_${shortid.generate()}.${
-          design.typeFile
-        }`;
-        pdf.save(`client/${fileName}`);
+      //   const fileName = `${design.id}_${shortid.generate()}.${
+      //     design.typeFile
+      //   }`;
+      //   pdf.save(`client/${fileName}`);
 
-        return `http://localhost:3333/${fileName}`;
-      } else {
-        const uri = stage.toDataURL({ pixelRatio: 3 }).split(';base64,').pop();
-        const imgBuffer = Buffer.from(uri, 'base64');
-        let image: any;
-        if (design.typeFile === 'png') {
-          image = await sharp(imgBuffer)
-            .resize({
-              width: design.canvasWidth,
-              height: design.canvasHeight,
-            })
-            .png()
-            .toBuffer();
-        }
-        if (design.typeFile === 'jpg') {
-          image = await sharp(imgBuffer)
-            .resize({
-              width: design.canvasWidth,
-              height: design.canvasHeight,
-            })
-            .jpeg()
-            .flatten({ background: '#fff' })
-            .toBuffer();
-        }
+      //   return `http://localhost:3333/${fileName}`;
+      // } else {
+      //   const uri = stage.toDataURL({ pixelRatio: 3 }).split(';base64,').pop();
+      //   const imgBuffer = Buffer.from(uri, 'base64');
+      //   let image: any;
+      //   if (design.typeFile === 'png') {
+      //     image = await sharp(imgBuffer)
+      //       .resize({
+      //         width: design.canvasWidth,
+      //         height: design.canvasHeight,
+      //       })
+      //       .png()
+      //       .toBuffer();
+      //   }
+      //   if (design.typeFile === 'jpg') {
+      //     image = await sharp(imgBuffer)
+      //       .resize({
+      //         width: design.canvasWidth,
+      //         height: design.canvasHeight,
+      //       })
+      //       .jpeg()
+      //       .flatten({ background: '#fff' })
+      //       .toBuffer();
+      //   }
 
-        const fileName = `${design.id}_${shortid.generate()}.${
-          design.typeFile
-        }`;
-        fs.writeFileSync(`client/${fileName}`, image);
+      //   const fileName = `${design.id}_${shortid.generate()}.${
+      //     design.typeFile
+      //   }`;
+      //   fs.writeFileSync(`client/${fileName}`, image);
 
-        return `http://localhost:3333/${fileName}`;
-      }
+      //   return `http://localhost:3333/${fileName}`;
+      // }
     };
 
     return await drawElements();
