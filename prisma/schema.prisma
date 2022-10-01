@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mysql"
+  url      = "mysql://oarbfegkxo4orwele1ku:pscale_pw_oTBnXyvqKLoU4bHSQ3qbWKLbbXfdUjqVeOwU75C0mYe@aws-eu-west-2.connect.psdb.cloud/appy?sslaccept=strict"
 }
 
 model Design {
@@ -21,14 +21,14 @@ model Design {
 
   files File[]
 
-  elements String? @db.VarChar(100000)
+  elements String? @db.VarChar(65000)
 }
 
 model File {
   id Int @id @default(autoincrement())
 
-  url      String
-  
+  url String
+
   design   Design? @relation(fields: [designId], references: [id])
   designId Int?
 }

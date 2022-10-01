@@ -4,10 +4,13 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { registerFont, Image, loadImage } from 'canvas';
 import sharp from 'sharp';
 //
+import shortid from 'shortid';
+//
 import QRCode from 'qrcode';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Konva = require('konva/cmj').default;
 import * as fs from 'fs';
+import { jsPDF } from 'jspdf';
 // registerFont('src/fonts/nunito.ttf', { family: 'Nunito' });
 
 @Injectable()
@@ -106,9 +109,12 @@ export class DesignService {
         }
 
         if (el._type === 'qrcode' && el.isReplace) {
-          const qrcode = await QRCode.toDataURL('I am a pony!', {
-            errorCorrectionLevel: 'H',
-          });
+          const qrcode = await QRCode.toDataURL(
+            body?.qrcodes[el.id]?.text ?? 'appy.com',
+            {
+              errorCorrectionLevel: 'H',
+            },
+          );
 
           const uri = qrcode.split(';base64,').pop();
 
@@ -117,11 +123,7 @@ export class DesignService {
             .resize({
               width: el.width,
               height: el.height,
-
-              position: el.pos,
               background: { r: 0, g: 0, b: 0, alpha: 0 },
-
-              fit: el.fit,
             })
             .png()
             .toBuffer()
@@ -200,9 +202,61 @@ export class DesignService {
       }
 
       if (design.typeFile === 'pdf') {
-        return stage.toDataURL({ pixelRatio: 3 });
+        const pdf = new jsPDF();
+        stage.find('Text').forEach((text: any) => {
+          const size = text.fontSize()
+          pdf.setFontSize(size);
+          pdf.text(text.text(), text.x(), text.y(), {
+            baseline: 'top',
+            angle: -text.getAbsoluteRotation(),
+          });
+        });
+
+        // then put image on top of texts (so texts are not visible)
+        pdf.addImage(
+          stage.toDataURL({ pixelRatio: 2 }),
+          0,
+          0,
+          stage.width(),
+          stage.height(),
+        );
+
+        const fileName = `${design.id}_${shortid.generate()}.${
+          design.typeFile
+        }`;
+        pdf.save(`client/${fileName}`);
+
+        return `http://localhost:3333/${fileName}`;
       } else {
-        return stage.toDataURL({ pixelRatio: 3 });
+        const uri = stage.toDataURL({ pixelRatio: 3 }).split(';base64,').pop();
+        const imgBuffer = Buffer.from(uri, 'base64');
+        let image: any;
+        if (design.typeFile === 'png') {
+          image = await sharp(imgBuffer)
+            .resize({
+              width: design.canvasWidth,
+              height: design.canvasHeight,
+            })
+            .png()
+            .toBuffer();
+        }
+        if (design.typeFile === 'jpg') {
+          image = await sharp(imgBuffer)
+            .resize({
+              width: design.canvasWidth,
+              height: design.canvasHeight,
+            })
+            .jpeg()
+            .flatten({ background: '#fff' })
+            .toBuffer();
+        }
+
+        const fileName = `${design.id}_${shortid.generate()}.${
+          design.typeFile
+        }`;
+        fs.writeFileSync(`client/${fileName}`, image);
+
+        return `http://localhost:3333/${fileName}`;
       }
     };
 
