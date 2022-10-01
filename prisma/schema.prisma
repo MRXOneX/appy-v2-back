@@ -3,11 +3,14 @@
 
 generator client {
   provider = "prisma-client-js"
+
+  previewFeatures = ["referentialIntegrity"]
 }
 
 datasource db {
-  provider = "mysql"
-  url      = "mysql://oarbfegkxo4orwele1ku:pscale_pw_oTBnXyvqKLoU4bHSQ3qbWKLbbXfdUjqVeOwU75C0mYe@aws-eu-west-2.connect.psdb.cloud/appy?sslaccept=strict"
+  provider             = "mysql"
+  url                  = "mysql://oarbfegkxo4orwele1ku:pscale_pw_oTBnXyvqKLoU4bHSQ3qbWKLbbXfdUjqVeOwU75C0mYe@aws-eu-west-2.connect.psdb.cloud/appy?sslaccept=strict"
+  referentialIntegrity = "prisma"
 }
 
 model Design {
